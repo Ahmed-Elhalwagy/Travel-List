@@ -17,6 +17,14 @@ function App() {
     setItems(items.filter((item) => item.id !== id));
   }
 
+  function clearListHandler(e) {
+    e.preventDefault();
+    const confirmed = window.confirm(
+      "Are you sure you want to clear all the list?"
+    );
+    if (confirmed) setItems([]);
+  }
+
   function handelDoubleClick(e, id) {
     if (e.detail === 2) {
       setItems((items) =>
@@ -36,6 +44,7 @@ function App() {
         setItems={setItems}
         onDeleteItem={deleteHandler}
         onDoubleClickItem={handelDoubleClick}
+        clearListHandler={clearListHandler}
       />
       <Statistics items={items} />
     </div>
@@ -88,7 +97,12 @@ function Form({ handelAddItems }) {
   );
 }
 
-function PackingList({ items, onDeleteItem, onDoubleClickItem }) {
+function PackingList({
+  items,
+  onDeleteItem,
+  onDoubleClickItem,
+  clearListHandler,
+}) {
   const [sortBy, setSortBy] = useState("input");
 
   let sortedItems;
@@ -132,6 +146,7 @@ function PackingList({ items, onDeleteItem, onDoubleClickItem }) {
             <option value="description">sort By description</option>
             <option value="packed">sort By status</option>
           </select>
+          <button onClick={(e) => clearListHandler(e)}>Clear List</button>
         </div>
       </div>
     </>
