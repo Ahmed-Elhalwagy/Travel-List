@@ -9,12 +9,35 @@ const intialItems = [
 function App() {
   const [items, setItems] = useState(intialItems);
 
+  function handelAddItems(item) {
+    setItems((items) => [...items, item]);
+  }
+
+  function deleteHandler(id) {
+    setItems(items.filter((item) => item.id !== id));
+  }
+
+  function handelDoubleClick(e, id) {
+    if (e.detail === 2) {
+      setItems((items) =>
+        items.map((item) =>
+          item.id === id ? { ...item, packed: !item.packed } : item
+        )
+      );
+    }
+  }
+
   return (
     <div className="app">
       <Logo />
-      <Form setItems={setItems} items={items} />
-      <PackingList items={items} setItems={setItems} />
-      <Stats items={items} />
+      <Form setItems={setItems} handelAddItems={handelAddItems} />
+      <PackingList
+        items={items}
+        setItems={setItems}
+        onDeleteItem={deleteHandler}
+        onDoubleClickItem={handelDoubleClick}
+      />
+      <Statistics items={items} />
     </div>
   );
 }
@@ -23,45 +46,49 @@ function Logo() {
   return <h1>🌴 Far Away 👜</h1>;
 }
 
-function Form({ items, setItems }) {
+function Form({ handelAddItems }) {
+  const [description, setDescription] = useState("");
+  const [quantity, setQuantity] = useState(1);
+
   function handelSubmit(e) {
     e.preventDefault();
-    const quantity = Number(e.target[0].value);
-    const description = e.target[1].value;
 
     if (!description) return;
+    const newItem = { description, quantity, packed: false, id: Date.now() };
 
-    setItems([
-      ...items,
-      {
-        description,
-        quantity,
-        packed: false,
-        id: Date.now(),
-      },
-    ]);
-    // console.log(items);
+    handelAddItems(newItem);
+
+    setDescription("");
+    setQuantity(1);
   }
 
   return (
     <>
       <form className="add-form" onSubmit={handelSubmit}>
         <h3>What do you need for your 😍 trip?</h3>
-        <select>
+        <select
+          value={quantity}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+        >
           <option value={1}>1</option>
           <option value={2}>2</option>
           <option value={3}>3</option>
           <option value={3}>4</option>
           <option value={3}>5</option>
         </select>
-        <input type="text" placeholder="Item..." />
+        <input
+          type="text"
+          placeholder="Item..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
         <button>Add</button>
       </form>
     </>
   );
 }
 
-function PackingList({ items, setItems }) {
+function PackingList({ items, onDeleteItem, onDoubleClickItem }) {
   return (
     <>
       <div className="list">
@@ -71,8 +98,8 @@ function PackingList({ items, setItems }) {
               <Item
                 item={item}
                 key={item.id}
-                setItems={setItems}
-                items={items}
+                onDeleteItem={onDeleteItem}
+                onDoubleClickItem={onDoubleClickItem}
               />
             );
           })}
@@ -82,47 +109,37 @@ function PackingList({ items, setItems }) {
   );
 }
 
-function Item({ item, setItems, items }) {
-  const [packed, setPacked] = useState(item.packed);
-
-  function deleteHandler(e) {
-    setItems(items.filter((i) => i.id !== item.id));
-  }
-
-  function clickHandler(e) {
-    e.preventDefault();
-    if (e.detail == 2) {
-      item.packed = !item.packed;
-      setItems(items.map((i) => (i.id == item.id ? item : i)));
-    }
-  }
-
+function Item({ item, onDeleteItem, onDoubleClickItem }) {
   return (
     <li>
       <span>{item.quantity}</span>
       <button
-        className={`${item.packed ? "item-packed" : ""}`}
-        onClick={clickHandler}
+        onClick={(e) => onDoubleClickItem(e, item.id)}
         data-value={item.description}
+        className={`${item.packed ? "item-packed" : ""}`}
       >
         {item.description}
       </button>
-      <button onClick={deleteHandler}>❌</button>
+      <button onClick={() => onDeleteItem(item.id)}>❌</button>
     </li>
   );
 }
 
-function Stats({ items }) {
+function Statistics({ items }) {
   let num0fItems = items.reduce((acc, item) => acc + item.quantity, 0);
   let packedItems = items.reduce((acc, item) => {
     return item.packed ? (acc += item.quantity) : acc;
   }, 0);
-  let percentage = num0fItems > 0 ? (packedItems / num0fItems) * 100 : 0;
+  let percentage =
+    num0fItems > 0 ? Math.round((packedItems / num0fItems) * 100) : 0;
   return (
     <>
       <footer className="stats">
-        You have {num0fItems} items on your list, and you already packed{" "}
-        {packedItems} ({percentage})%
+        {percentage === 100
+          ? "You Got Everything to go ✈️"
+          : num0fItems === 0
+          ? "Start Adding some items to your packing list"
+          : `You have ${num0fItems} items on your list, and you already packed ${packedItems} (${percentage})%`}
       </footer>
     </>
   );
